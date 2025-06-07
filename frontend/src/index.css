@@ -1,0 +1,93 @@
+.waste-classifier {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 30px;
+  border-radius: 20px;
+  background: #f5f5dc; /* Beige */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: transform 0.3s ease;
+}
+
+.waste-classifier:hover {
+  transform: scale(1.01);
+}
+
+.waste-classifier h2 {
+  margin-bottom: 25px;
+  font-size: 24px;
+  color: #333;
+}
+
+.waste-classifier input[type="file"] {
+  margin-bottom: 20px;
+  border: 2px dashed #ccc;
+  border-radius: 10px;
+  padding: 10px;
+  background-color: #fffef0;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+}
+
+.waste-classifier input[type="file"]:hover {
+  border-color: #b89c4c;
+}
+
+.waste-classifier .preview {
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+.waste-classifier button {
+  padding: 12px 24px;
+  font-size: 16px;
+  border: none;
+  border-radius: 25px;
+  background-color: #b89c4c;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.waste-classifier button:hover {
+  background-color: #a3883c;
+  transform: translateY(-2px);
+}
+
+.waste-classifier button:disabled {
+  background-color: #dcd2ab;
+  cursor: not-allowed;
+}
+
+.result {
+  margin-top: 25px;
+  font-size: 18px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.result strong {
+  color: #6b4f1d;
+}
+
+.result .error {
+  color: red;
+  font-weight: bold;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
