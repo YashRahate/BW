@@ -25,6 +25,8 @@ app.use('/api/impact', require('./routes/impactRoutes'));
 app.use('/api/waste', require('./routes/wasteRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/upload', require('./routes/uploads'));
+app.use('/api/chatbot', require('./routes/chatbotRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

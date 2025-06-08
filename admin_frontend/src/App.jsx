@@ -8,6 +8,7 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import AddEvent from './pages/AddEvent';
 import MyEvent from './pages/MyEvent';
+import ViewEvent from './pages/ViewEvent';
 
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/add_events" element={< AddEvent/>} />
               <Route path="/my_events" element={< MyEvent />} />
+              <Route path="/view_event/:id" element={<ViewEvent />} />
             </Routes>
           </div>
         </div>

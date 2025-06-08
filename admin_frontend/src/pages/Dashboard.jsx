@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Chatbot from '../components/Chatbot';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -142,6 +143,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      <div><Chatbot></Chatbot></div>
     </div>
   );
 };

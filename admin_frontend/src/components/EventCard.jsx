@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const EventCard = ({ event, onEdit, onDelete }) => {
+  const navigate = useNavigate();
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -14,6 +17,10 @@ const EventCard = ({ event, onEdit, onDelete }) => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleViewEvent = () => {
+    navigate(`/view_event/${event._id}`);
   };
 
   return (
@@ -147,6 +154,20 @@ const EventCard = ({ event, onEdit, onDelete }) => {
         gap: '10px',
         justifyContent: 'flex-end'
       }}>
+        <button
+          onClick={handleViewEvent}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          View
+        </button>
         <button
           onClick={() => onEdit(event)}
           style={{
