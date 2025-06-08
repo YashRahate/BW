@@ -28,6 +28,8 @@ app.use('/api/upload', require('./routes/uploads'));
 app.use('/api/chatbot', require('./routes/chatbotRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 
+app.use('/api/volunteer-auth', require('./routes/volunteerAuthRoutes'));
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

@@ -114,10 +114,10 @@ router.get('/:id', verifyToken, async (req, res) => {
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    // Check if organizer owns this event
-    if (event.organizerId._id.toString() !== req.organizerId) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
+    // // Check if organizer owns this event
+    // if (event.organizerId._id.toString() !== req.organizerId) {
+    //   return res.status(403).json({ message: 'Access denied' });
+    // }
 
     res.json({
       success: true,
