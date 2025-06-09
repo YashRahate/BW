@@ -1,43 +1,36 @@
-import os
-import requests
-from dotenv import load_dotenv
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+import torch
 
-load_dotenv()
-HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 
-headers = {
-    "Authorization": f"Bearer {HUGGINGFACE_API_KEY}"
-}
+# Load tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    device_map="auto",  # Uses GPU if available
+    torch_dtype=torch.float16  # Optional: reduces memory usage
+)
+
+# Create generation pipeline
+report_pipe = pipeline(
+    "text-generation",
+    model=model,
+    tokenizer=tokenizer,
+    device=0 if torch.cuda.is_available() else -1
+)
 
 def generate_report_text(prompt: str) -> str:
-    url = "https://api-inference.huggingface.co/models/deepseek-ai/DeepSeek-R1-0528-Qwen3-8B"  # known working model
-    payload = {
-        "inputs": f"Write a short environmental awareness report on:\n{prompt}"
-    }
-
+    formatted_prompt = f"[INST] Write a short environmental awareness report on:\n{prompt} [/INST]"
     try:
-        response = requests.post(url, headers=headers, json=payload)
-
-        if response.status_code != 200:
-            print("Report generation failed:", response.status_code, response.text)
-            return "Report generation failed."
-
-        try:
-            result = response.json()
-            print("Raw result:", result)
-
-            if isinstance(result, list) and "generated_text" in result[0]:
-                return result[0]["generated_text"]
-            elif isinstance(result, dict) and "generated_text" in result:
-                return result["generated_text"]
-            else:
-                print("Unexpected response format:", result)
-                return "Unexpected response structure."
-
-        except ValueError as json_err:
-            print("Invalid JSON in report response:", response.text)
-            return "Failed to parse report response."
-
+        result = report_pipe(
+            formatted_prompt,
+            max_new_tokens=300,
+            temperature=0.7,
+            top_p=0.9,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id
+        )
+        return result[0]['generated_text'].replace(formatted_prompt, "").strip()
     except Exception as e:
-        print("Report generation error:", e)
+        print("Error generating report:", e)
         return "Report generation failed."

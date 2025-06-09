@@ -4,7 +4,13 @@ import os
 from utils.flyer_utils import generate_flyer_image
 from utils.report_utils import generate_report_text
 from dotenv import load_dotenv
+from huggingface_hub import snapshot_download
+from pathlib import Path
 
+mistral_models_path = Path.home().joinpath('mistral_models', '7B-Instruct-v0.3')
+mistral_models_path.mkdir(parents=True, exist_ok=True)
+
+snapshot_download(repo_id="mistralai/Mistral-7B-Instruct-v0.3", allow_patterns=["params.json", "consolidated.safetensors", "tokenizer.model.v3"], local_dir=mistral_models_path)
 load_dotenv()
 
 app = Flask(__name__)
@@ -48,16 +54,6 @@ def generate_report():
     except Exception as e:
         print("Report generation error:", e)
         return jsonify({'error': str(e)}), 500
-
-# --- Serve flyer image files ---
-@app.route('/flyer/<filename>')
-def serve_flyer(filename):
-    return send_from_directory(FLYER_DIR, filename)
-
-# --- Static file fallback (optional) ---
-@app.route('/static/<path:path>')
-def send_static(path):
-    return send_from_directory('static', path)
 
 if __name__ == "__main__":
     app.run(debug=True)
