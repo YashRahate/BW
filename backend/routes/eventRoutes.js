@@ -104,7 +104,7 @@ router.get('/my-events', verifyToken, async (req, res) => {
 });
 
 // Get single event
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const event = await Event.findById(req.params.id)
       .populate('registeredVolunteers', 'name email mobileNo')
@@ -194,7 +194,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
 // Get all events (for volunteers to see)
 router.get('/', async (req, res) => {
   try {
-    const events = await Event.find({ status: 'upcoming' })
+    const events = await Event.find({ status: { $in: ['upcoming', 'ongoing'] } })
       .populate('organizerId', 'name affiliatedNgo')
       .sort({ dateOfEvent: 1 });
 

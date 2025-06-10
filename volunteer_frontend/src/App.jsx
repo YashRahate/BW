@@ -13,6 +13,7 @@ import ClassifyWaste from './pages/ClassifyWaste';
 import Reward from './pages/Reward';
 import Gamification from './pages/Gamification';
 import ViewEvent from './pages/ViewEvent';
+import WasteSubmission from './pages/WasteSubmission';
 
 
 // Protected Route Component
@@ -195,6 +196,14 @@ function App() {
                 element={
                   <ProtectedRoute user={user} requiredRole="volunteer">
                     <ViewEvent />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/submit_waste/:eventId" 
+                element={
+                  <ProtectedRoute user={user} requiredRole="volunteer">
+                    <WasteSubmission />
                   </ProtectedRoute>
                 } 
               />

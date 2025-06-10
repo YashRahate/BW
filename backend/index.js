@@ -3,12 +3,15 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 
+
 // Load environment variables
 dotenv.config();
 
 // Connect to database
 connectDB();
 
+// After DB connection
+require('./cron/updateEventStatus');
 const app = express();
 
 // Middleware
@@ -27,7 +30,6 @@ app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/upload', require('./routes/uploads'));
 app.use('/api/chatbot', require('./routes/chatbotRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
-
 app.use('/api/volunteer-auth', require('./routes/volunteerAuthRoutes'));
 
 // Error handling middleware

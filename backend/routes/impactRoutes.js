@@ -18,14 +18,14 @@ const verifyToken = async (req, res, next) => {
 };
 
 // Create/Update impact data for event
-router.post('/:eventId', verifyToken, async (req, res) => {
+router.post('/:eventId', async (req, res) => {
   try {
     const { totalWasteCollected, volunteerParticipationCount, co2OffsetEstimation, wasteByType } = req.body;
     const eventId = req.params.eventId;
 
-    // Verify event belongs to organizer
+    // Verify event 
     const event = await Event.findById(eventId);
-    if (!event || event.organizerId.toString() !== req.organizerId) {
+    if (!event) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
