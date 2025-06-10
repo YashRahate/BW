@@ -10,10 +10,10 @@ import Dashboard from './pages/Dashboard';
 import AllEvent from './pages/AllEvent';
 import PastEvent from './pages/PastEvent';
 import ClassifyWaste from './pages/ClassifyWaste';
-import Reward from './pages/Reward';
 import Gamification from './pages/Gamification/Gamification';
 import ViewEvent from './pages/ViewEvent';
 import WasteClassifier from './pages/Waste_Classifier/WasteClassifier'
+import Games from './pages/Gamification/Games'
 
 
 
@@ -171,16 +171,16 @@ function App() {
               <Route 
                 path="/classify_waste" 
                 element={
-                  <ProtectedRoute user={user} requiredRole="volunteer">
-                    <ClassifyWaste />
+                  <ProtectedRoute user={user}>
+                    <WasteClassifier />
                   </ProtectedRoute>
                 } 
               />
               <Route 
-                path="/rewards" 
+                path="/games" 
                 element={
                   <ProtectedRoute user={user} requiredRole="volunteer">
-                    <Reward />
+                    <Games />
                   </ProtectedRoute>
                 } 
               />

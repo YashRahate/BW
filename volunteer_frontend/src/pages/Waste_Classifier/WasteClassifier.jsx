@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './WasteClassifier';
+import './WasteClassifier.css';
 
 const WasteClassifier = () => {
   const [selectedFile, setSelectedFile] = useState(null);
