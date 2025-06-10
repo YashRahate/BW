@@ -11,7 +11,7 @@ import AllEvent from './pages/AllEvent';
 import PastEvent from './pages/PastEvent';
 import ClassifyWaste from './pages/ClassifyWaste';
 import Reward from './pages/Reward';
-import Gamification from './pages/Gamification';
+import Gamification from './pages/Gamification/Gamification';
 import ViewEvent from './pages/ViewEvent';
 import WasteClassifier from './pages/Waste_Classifier/WasteClassifier'
 
