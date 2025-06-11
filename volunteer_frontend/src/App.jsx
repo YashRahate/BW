@@ -9,11 +9,11 @@ import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import AllEvent from './pages/AllEvent';
 import PastEvent from './pages/PastEvent';
-import ClassifyWaste from './pages/ClassifyWaste';
 import Gamification from './pages/Gamification/Gamification';
 import ViewEvent from './pages/ViewEvent';
 import WasteClassifier from './pages/Waste_Classifier/WasteClassifier'
 import Games from './pages/Gamification/Games'
+import CleanupForm from './pages/blockchain/CleanupForm'
 
 
 
@@ -205,6 +205,14 @@ function App() {
                 element={
                   <ProtectedRoute user={user} requiredRole="volunteer">
                     <ViewEvent />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/blockchain" 
+                element={
+                  <ProtectedRoute user={user}>
+                    <CleanupForm />
                   </ProtectedRoute>
                 } 
               />

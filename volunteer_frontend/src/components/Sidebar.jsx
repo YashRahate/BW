@@ -11,6 +11,7 @@ const Sidebar = () => {
     { path: '/classify_waste', label: 'Classify Waste' },
     { path: '/games', label: 'Games & Rewards' },
     { path: '/gamification', label: 'Leaderboard' },
+    { path: '/blockchain', label: 'Blockchain' },
   
   ];
 
