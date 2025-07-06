@@ -8,6 +8,7 @@ const Sidebar = () => {
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/my_events', label: 'My Events' },
     { path: '/add_events', label: 'Add Event' },
+    { path: '/global_dashboard', label: 'Global Statistics' },
   
   ];
 

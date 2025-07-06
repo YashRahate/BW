@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { Event, Beach, Organizer } = require('../models');
-
+const { Event, Beach, Organizer,Volunteer } = require('../models');
+const { sendNewEventNotification } = require('../services/emailService'); // Import your email service
 const router = express.Router();
 
 // Middleware to verify token
@@ -75,14 +75,29 @@ router.post('/create', verifyToken, async (req, res) => {
       $push: { eventHistory: event._id }
     });
 
+    // After event is saved, send notification to all active volunteers
+        const allVolunteers = await Volunteer.find({}).select('email'); // Get all volunteer emails
+
+        const eventLink = `http://yourfrontend.com/volunteer_view_event/${event._id}`; // Replace with your actual frontend event detail page URL
+
+        // Send emails in parallel (but be mindful of sending limits for free tiers)
+        await Promise.all(allVolunteers.map(async (volunteer) => {
+            if (volunteer.email) {
+                await sendNewEventNotification(volunteer.email, event, eventLink);
+            }
+        }));
+
+    res.status(201).json({ message: 'Event created successfully and notifications sent.', event: event });
+
     res.status(201).json({
       success: true,
-      message: 'Event created successfully',
+      message: 'Event created successfully and notifications sent.', 
+      event: event,
       data: event
     });
   } catch (error) {
-    console.error('Event creation error:', error);
-    res.status(500).json({ message: 'Server error during event creation' });
+    console.error('Error creating event and sending notifications:', error);
+    res.status(500).json({ message: 'Failed to create event', error: error.message });
   }
 });
 

@@ -6,7 +6,8 @@ import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
+import VolunteerDashboard from './pages/VolunteerDashboard';
+import GlobalDashboard from './pages/GlobalDashboard';
 import AllEvent from './pages/AllEvent';
 import PastEvent from './pages/PastEvent';
 import ClassifyWaste from './pages/ClassifyWaste';
@@ -147,7 +148,7 @@ function App() {
                 path="/volunteer_dashboard" 
                 element={
                   <ProtectedRoute user={user} requiredRole="volunteer">
-                    <Dashboard />
+                    <VolunteerDashboard />
                   </ProtectedRoute>
                 } 
               />
@@ -204,6 +205,14 @@ function App() {
                 element={
                   <ProtectedRoute user={user} requiredRole="volunteer">
                     <WasteSubmission />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/global_dashboard" 
+                element={
+                  <ProtectedRoute user={user} requiredRole="volunteer">
+                    < GlobalDashboard />
                   </ProtectedRoute>
                 } 
               />
