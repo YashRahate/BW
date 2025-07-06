@@ -10,6 +10,7 @@ import GlobalDashboard from './pages/GlobalDashboard';
 import AddEvent from './pages/AddEvent';
 import MyEvent from './pages/MyEvent';
 import ViewEvent from './pages/ViewEvent';
+import FlyerGenerator from './pages/FlyerGenerator/FlyerGenerator';
 
 
 function App() {
@@ -56,6 +57,7 @@ function App() {
               <Route path="/add_events" element={< AddEvent/>} />
               <Route path="/my_events" element={< MyEvent />} />
               <Route path="/view_event/:id" element={<ViewEvent />} />
+              <Route path="/flyer" element={<FlyerGenerator />} />
             </Routes>
           </div>
         </div>
