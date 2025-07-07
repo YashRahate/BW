@@ -32,7 +32,9 @@ app.use('/api/volunteerdashboard', require('./routes/volunteerDashboardRoutes'))
 app.use('/api/upload', require('./routes/uploads'));
 app.use('/api/chatbot', require('./routes/chatbotRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/gamification', require('./routes/gameRoutes'));
 app.use('/api/volunteer-auth', require('./routes/volunteerAuthRoutes'));
+app.use('/api/games', require('./routes/gamesRoutes')); 
 
 // Error handling middleware
 app.use((err, req, res, next) => {

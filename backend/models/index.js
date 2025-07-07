@@ -162,7 +162,23 @@ const volunteerSchema = new mongoose.Schema({
   age: { type: Number },
   gender: { type: String, enum: ['Male', 'Female', 'Other'] },
   wasteCollected: { type: Number, default: 0 },
-  role: { type: String, default: 'volunteer' }
+  role: { type: String, default: 'volunteer' },
+  quizStats: {
+    totalPoints: { type: Number, default: 0 },
+    correctAnswers: { type: Number, default: 0 },
+    totalAttempts: { type: Number, default: 0 },
+    quizStreak: { type: Number, default: 0 },
+    completedLevels: [{ type: Number }],
+    badges: [{ type: String }],
+    lastQuizDate: { type: Date },
+    dailyChallengeCompleted: { type: Boolean, default: false },
+    practiceQuizzesTaken: { type: Number, default: 0 },
+    levelProgress: {
+      level1: { completed: { type: Boolean, default: false }, bestScore: { type: Number, default: 0 } },
+      level2: { completed: { type: Boolean, default: false }, bestScore: { type: Number, default: 0 } },
+      level3: { completed: { type: Boolean, default: false }, bestScore: { type: Number, default: 0 } }
+    }
+  }
 }, { timestamps: true });
 
 volunteerSchema.pre('save', async function(next) {

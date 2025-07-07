@@ -10,12 +10,13 @@ import VolunteerDashboard from './pages/VolunteerDashboard';
 import GlobalDashboard from './pages/GlobalDashboard';
 import AllEvent from './pages/AllEvent';
 import PastEvent from './pages/PastEvent';
-import ClassifyWaste from './pages/ClassifyWaste';
-import Reward from './pages/Reward';
-import Gamification from './pages/Gamification';
+import Gamification from './pages/Gamification/Gamification';
 import ViewEvent from './pages/ViewEvent';
 import WasteSubmission from './pages/WasteSubmission';
 import WasteClassifier from './pages/Waste_Classifier/WasteClassifier';
+import Games from './pages/Gamification/Games'
+import CleanupForm from './pages/blockchain/CleanupForm'
+
 
 
 
@@ -173,16 +174,16 @@ function App() {
               <Route 
                 path="/classify_waste" 
                 element={
-                  <ProtectedRoute user={user} requiredRole="volunteer">
-                    <ClassifyWaste />
+                  <ProtectedRoute user={user}>
+                    <WasteClassifier />
                   </ProtectedRoute>
                 } 
               />
               <Route 
-                path="/rewards" 
+                path="/games" 
                 element={
                   <ProtectedRoute user={user} requiredRole="volunteer">
-                    <Reward />
+                    <Games />
                   </ProtectedRoute>
                 } 
               />
@@ -223,6 +224,14 @@ function App() {
                 element={
                   <ProtectedRoute user={user} requiredRole="volunteer">
                     < GlobalDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/blockchain" 
+                element={
+                  <ProtectedRoute user={user}>
+                    <CleanupForm />
                   </ProtectedRoute>
                 } 
               />
