@@ -6,14 +6,17 @@ import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
+import VolunteerDashboard from './pages/VolunteerDashboard';
+import GlobalDashboard from './pages/GlobalDashboard';
 import AllEvent from './pages/AllEvent';
 import PastEvent from './pages/PastEvent';
 import Gamification from './pages/Gamification/Gamification';
 import ViewEvent from './pages/ViewEvent';
-import WasteClassifier from './pages/Waste_Classifier/WasteClassifier'
+import WasteSubmission from './pages/WasteSubmission';
+import WasteClassifier from './pages/Waste_Classifier/WasteClassifier';
 import Games from './pages/Gamification/Games'
 import CleanupForm from './pages/blockchain/CleanupForm'
+
 
 
 
@@ -148,7 +151,7 @@ function App() {
                 path="/volunteer_dashboard" 
                 element={
                   <ProtectedRoute user={user} requiredRole="volunteer">
-                    <Dashboard />
+                    <VolunteerDashboard />
                   </ProtectedRoute>
                 } 
               />
@@ -205,6 +208,22 @@ function App() {
                 element={
                   <ProtectedRoute user={user} requiredRole="volunteer">
                     <ViewEvent />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/submit_waste/:eventId" 
+                element={
+                  <ProtectedRoute user={user} requiredRole="volunteer">
+                    <WasteSubmission />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/global_dashboard" 
+                element={
+                  <ProtectedRoute user={user} requiredRole="volunteer">
+                    < GlobalDashboard />
                   </ProtectedRoute>
                 } 
               />

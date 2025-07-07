@@ -9,6 +9,7 @@ const Sidebar = () => {
     { path: '/volunteer_events', label: 'Events' },
     { path: '/past_events', label: 'Past Event' },
     { path: '/classify_waste', label: 'Classify Waste' },
+    { path: '/global_dashboard', label: 'Global Statistics' },
     { path: '/games', label: 'Games & Rewards' },
     { path: '/gamification', label: 'Leaderboard' },
     { path: '/blockchain', label: 'Blockchain' },

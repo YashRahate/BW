@@ -3,12 +3,15 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 
+
 // Load environment variables
 dotenv.config();
 
 // Connect to database
 connectDB();
 
+// After DB connection
+require('./cron/updateEventStatus');
 const app = express();
 
 // Middleware
@@ -23,7 +26,9 @@ app.use('/api/beaches', require('./routes/beachRoutes'));
 app.use('/api/volunteers', require('./routes/volunteerRoutes'));
 app.use('/api/impact', require('./routes/impactRoutes'));
 app.use('/api/waste', require('./routes/wasteRoutes'));
-app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+app.use('/api/admindashboard', require('./routes/adminDashboardRoutes'));
+app.use('/api/globaldashboard', require('./routes/globalDashboardRoutes'));
+app.use('/api/volunteerdashboard', require('./routes/volunteerDashboardRoutes'));
 app.use('/api/upload', require('./routes/uploads'));
 app.use('/api/chatbot', require('./routes/chatbotRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));

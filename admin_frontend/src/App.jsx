@@ -5,7 +5,8 @@ import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import GlobalDashboard from './pages/GlobalDashboard';
 import AddEvent from './pages/AddEvent';
 import MyEvent from './pages/MyEvent';
 import ViewEvent from './pages/ViewEvent';
@@ -51,7 +52,8 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login onLogin={handleLogin} />} />
               <Route path="/signup" element={<Signup />} />
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard" element={<AdminDashboard />} />
+              <Route path="/global_dashboard" element={<GlobalDashboard />} />
               <Route path="/add_events" element={< AddEvent/>} />
               <Route path="/my_events" element={< MyEvent />} />
               <Route path="/view_event/:id" element={<ViewEvent />} />

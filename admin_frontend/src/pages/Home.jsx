@@ -5,6 +5,7 @@ const Home = () => {
   const token = localStorage.getItem('token');
   const user = localStorage.getItem('user');
   const isAuthenticated = token && user;
+  console.log(user);
 
   return (
     <div>

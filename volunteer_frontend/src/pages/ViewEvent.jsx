@@ -4,6 +4,7 @@ import axios from 'axios';
 
 const ViewEvent = () => {
   const { id } = useParams();
+  console.log("Event ID", id);
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,14 +13,23 @@ const ViewEvent = () => {
   const [registrationStatus, setRegistrationStatus] = useState({
     isRegistered: false,
     canRegister: false,
-    loading: true
+    loading: true,
   });
+  const [navigating, setNavigating] = useState(false);
+  const [userLocation, setUserLocation] = useState(null); // New state for user's current location
+  const [isNearEvent, setIsNearEvent] = useState(false); // New state for proximity check
+  const [checkingLocation, setCheckingLocation] = useState(false); // New state for location check loading
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const OPENROUTE_API_KEY = import.meta.env.VITE_OPENROUTE_API_KEY || 'your-openroute-api-key';
+
+  // Proximity threshold in meters (e.g., 500 meters)
+  const PROXIMITY_THRESHOLD = 5000000;
 
   useEffect(() => {
     fetchEvent();
     checkRegistrationStatus();
+    getUserLocationAndCheckProximity(); // Call new function on component mount
   }, [id]);
 
   const fetchEvent = async () => {
@@ -27,10 +37,10 @@ const ViewEvent = () => {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API_BASE_URL}/events/${id}`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
+
       if (response.data.success) {
         setEvent(response.data.data);
       }
@@ -47,52 +57,53 @@ const ViewEvent = () => {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API_BASE_URL}/volunteers/check-registration/${id}`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (response.data.success) {
         setRegistrationStatus({
           isRegistered: response.data.data.isRegistered,
           canRegister: response.data.data.canRegister,
-          loading: false
+          loading: false,
         });
       }
     } catch (error) {
       console.error('Error checking registration status:', error);
-      setRegistrationStatus(prev => ({ ...prev, loading: false }));
+      setRegistrationStatus((prev) => ({ ...prev, loading: false }));
     }
   };
 
   const handleRegisterForEvent = async () => {
     setRegistering(true);
-    
+
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_BASE_URL}/volunteers/register/${id}`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`
+      const response = await axios.post(
+        `${API_BASE_URL}/volunteers/register/${id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      });
+      );
 
       if (response.data.success) {
         alert('✅ Successfully registered for the event!');
-        
-        // Update registration status
         setRegistrationStatus({
           isRegistered: true,
           canRegister: false,
-          loading: false
+          loading: false,
         });
-
-        // Refresh event data to show updated volunteer count
         fetchEvent();
       } else {
         alert(`❌ Registration failed: ${response.data.message}`);
       }
     } catch (error) {
       console.error('Registration error:', error);
-      const errorMessage = error.response?.data?.message || 'Error during registration. Please try again.';
+      const errorMessage =
+        error.response?.data?.message || 'Error during registration. Please try again.';
       alert(`❌ ${errorMessage}`);
     } finally {
       setRegistering(false);
@@ -105,36 +116,167 @@ const ViewEvent = () => {
     }
 
     setRegistering(true);
-    
+
     try {
       const token = localStorage.getItem('token');
       const response = await axios.delete(`${API_BASE_URL}/volunteers/unregister/${id}`, {
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (response.data.success) {
         alert('✅ Successfully unregistered from the event!');
-        
-        // Update registration status
         setRegistrationStatus({
           isRegistered: false,
           canRegister: true,
-          loading: false
+          loading: false,
         });
-
-        // Refresh event data to show updated volunteer count
         fetchEvent();
       } else {
         alert(`❌ Unregistration failed: ${response.data.message}`);
       }
     } catch (error) {
       console.error('Unregistration error:', error);
-      const errorMessage = error.response?.data?.message || 'Error during unregistration. Please try again.';
+      const errorMessage =
+        error.response?.data?.message || 'Error during unregistration. Please try again.';
       alert(`❌ ${errorMessage}`);
     } finally {
       setRegistering(false);
+    }
+  };
+
+  const getUserLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by this browser'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+        },
+        (error) => {
+          reject(error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000,
+        }
+      );
+    });
+  };
+
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // metres
+    const φ1 = (lat1 * Math.PI) / 180; // φ, λ in radians
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const distance = R * c; // in metres
+    return distance;
+  };
+
+  const getUserLocationAndCheckProximity = async () => {
+    setCheckingLocation(true);
+    try {
+      const location = await getUserLocation();
+      setUserLocation(location);
+
+      if (event && event.beachLocation) {
+        const distance = calculateDistance(
+          location.latitude,
+          location.longitude,
+          event.beachLocation.latitude,
+          event.beachLocation.longitude
+        );
+        setIsNearEvent(distance <= PROXIMITY_THRESHOLD);
+      }
+    } catch (error) {
+      console.error('Error getting user location or checking proximity:', error);
+      setIsNearEvent(false); // Assume not near if location cannot be obtained
+      // Optionally, show an alert to the user that location could not be determined
+    } finally {
+      setCheckingLocation(false);
+    }
+  };
+
+  const getDirections = async () => {
+    setNavigating(true);
+
+    try {
+      // Get user's current location
+      const location = await getUserLocation();
+      setUserLocation(location);
+
+      // Get directions from OpenRouteService
+      const response = await axios.post(
+        'https://api.openrouteservice.org/v2/directions/driving-car',
+        {
+          coordinates: [
+            [location.longitude, location.latitude], // Start point
+            [event.beachLocation.longitude, event.beachLocation.latitude], // End point
+          ],
+          format: 'json',
+          instructions: true,
+          language: 'en',
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${OPENROUTE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.data.routes && response.data.routes.length > 0) {
+        const route = response.data.routes[0];
+        const duration = Math.round(route.summary.duration / 60); // Convert to minutes
+        const distance = (route.summary.distance / 1000).toFixed(1); // Convert to km
+
+        // Show route summary
+        const proceed = window.confirm(
+          `🗺️ Route Found!\n\nDistance: ${distance} km\nEstimated Time: ${duration} minutes\n\nWould you like to open directions in Google Maps?`
+        );
+
+        if (proceed) {
+          // Open Google Maps with directions
+          const googleMapsUrl = `http://maps.google.com/maps?saddr=${location.latitude},${location.longitude}&daddr=${event.beachLocation.latitude},${event.beachLocation.longitude}`;
+          window.open(googleMapsUrl, '_blank');
+        }
+      } else {
+        throw new Error('No route found');
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+
+      if (error.message === 'Geolocation is not supported by this browser') {
+        alert('❌ Geolocation is not supported by your browser. Please enable location services.');
+      } else if (error.code === 1) {
+        alert('❌ Location access denied. Please allow location access to get directions.');
+      } else if (error.code === 2) {
+        alert('❌ Unable to determine your location. Please check your GPS settings.');
+      } else if (error.code === 3) {
+        alert('❌ Location request timed out. Please try again.');
+      } else {
+        // Fallback: Open Google Maps without directions
+        const googleMapsUrl = `http://maps.google.com/maps?q=${event.beachLocation.latitude},${event.beachLocation.longitude}`;
+        window.open(googleMapsUrl, '_blank');
+        alert('⚠️ Could not get directions, but opened the location in Google Maps.');
+      }
+    } finally {
+      setNavigating(false);
     }
   };
 
@@ -142,14 +284,14 @@ const ViewEvent = () => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
   const formatTime = (timeString) => {
     return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -172,58 +314,113 @@ const ViewEvent = () => {
     return '📝 Register Now';
   };
 
-  const getRegistrationButtonStyle = () => {
-    const baseStyle = {
-      padding: '12px 24px',
+  const handleCollectWasteClick = () => {
+    navigate(`/submit_waste/${id}`);
+  };
+
+  // Determine if the "Submit Collected Waste" button should be visible
+  const showSubmitWasteButton =
+    registrationStatus.isRegistered;// && // Volunteer is registered
+    //event?.status === 'ongoing'; //&& // Event status is 'ongoing'
+    // isNearEvent && // User's current location is near the event
+    // !checkingLocation; // Not currently checking location
+
+  // Simplified styles
+  const styles = {
+    container: {
+      maxWidth: '800px',
+      margin: '0 auto',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif',
+    },
+    header: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '20px',
+    },
+    button: {
+      padding: '10px 20px',
       border: 'none',
-      borderRadius: '6px',
-      cursor: registrationStatus.canRegister || registrationStatus.isRegistered ? 'pointer' : 'not-allowed',
-      fontSize: '16px',
+      borderRadius: '5px',
+      cursor: 'pointer',
+      fontSize: '14px',
+    },
+    backButton: {
+      backgroundColor: '#666',
+      color: 'white',
+    },
+    registerButton: {
+      backgroundColor: registrationStatus.isRegistered ? '#ff5722' : '#4caf50',
+      color: 'white',
       fontWeight: 'bold',
-      transition: 'all 0.3s ease'
-    };
-
-    if (registering) {
-      return {
-        ...baseStyle,
-        backgroundColor: '#ccc',
-        color: '#666',
-        cursor: 'not-allowed'
-      };
-    }
-
-    if (registrationStatus.isRegistered) {
-      return {
-        ...baseStyle,
-        backgroundColor: '#ff5722',
-        color: 'white'
-      };
-    }
-
-    if (registrationStatus.canRegister) {
-      return {
-        ...baseStyle,
-        backgroundColor: '#4caf50',
-        color: 'white'
-      };
-    }
-
-    return {
-      ...baseStyle,
-      backgroundColor: '#ccc',
-      color: '#666'
-    };
+    },
+    submitWasteButton: {
+      backgroundColor: '#007bff', // Blue color for submit button
+      color: 'white',
+      fontWeight: 'bold',
+      marginTop: '20px',
+      width: '100%', // Make it full width
+      padding: '12px 20px',
+    },
+    card: {
+      backgroundColor: 'white',
+      border: '1px solid #ddd',
+      borderRadius: '8px',
+      padding: '20px',
+      marginBottom: '20px',
+    },
+    title: {
+      fontSize: '24px',
+      marginBottom: '10px',
+      color: '#333',
+    },
+    section: {
+      marginBottom: '20px',
+    },
+    sectionTitle: {
+      fontSize: '18px',
+      fontWeight: 'bold',
+      marginBottom: '10px',
+      color: '#333',
+    },
+    infoGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: '20px',
+    },
+    infoBox: {
+      padding: '15px',
+      backgroundColor: '#f9f9f9',
+      border: '1px solid #eee',
+      borderRadius: '5px',
+    },
+    navigateButton: {
+      backgroundColor: '#2196f3',
+      color: 'white',
+      marginTop: '10px',
+    },
+    statusBadge: {
+      padding: '5px 10px',
+      borderRadius: '15px',
+      fontSize: '12px',
+      fontWeight: 'bold',
+      backgroundColor: event?.status === 'upcoming' ? '#e3f2fd' : '#e8f5e8',
+      color: event?.status === 'upcoming' ? '#1976d2' : '#388e3c',
+    },
+    alert: {
+      backgroundColor: '#e8f5e8',
+      border: '1px solid #4caf50',
+      borderRadius: '5px',
+      padding: '15px',
+      marginBottom: '20px',
+      color: '#2e7d32',
+    },
   };
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontSize: '18px'
-      }}>
+      <div style={{ ...styles.container, textAlign: 'center', paddingTop: '100px' }}>
         Loading event details...
       </div>
     );
@@ -231,28 +428,9 @@ const ViewEvent = () => {
 
   if (error) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontSize: '18px',
-        color: '#f44336'
-      }}>
-        <p>{error}</p>
-        <button
-          onClick={handleGoBack}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#2196f3',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            marginTop: '20px'
-          }}
-        >
+      <div style={{ ...styles.container, textAlign: 'center', paddingTop: '100px' }}>
+        <p style={{ color: '#f44336' }}>{error}</p>
+        <button onClick={handleGoBack} style={{ ...styles.button, ...styles.backButton }}>
           Go Back
         </button>
       </div>
@@ -261,58 +439,25 @@ const ViewEvent = () => {
 
   if (!event) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        fontSize: '18px'
-      }}>
+      <div style={{ ...styles.container, textAlign: 'center', paddingTop: '100px' }}>
         Event not found
       </div>
     );
   }
 
   return (
-    <div style={{
-      maxWidth: '1200px',
-      margin: '0 auto',
-      padding: '20px',
-      backgroundColor: '#f5f5f5',
-      minHeight: '100vh'
-    }}>
+    <div style={styles.container}>
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '30px'
-      }}>
-        <button
-          onClick={handleGoBack}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#666',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
+      <div style={styles.header}>
+        <button onClick={handleGoBack} style={{ ...styles.button, ...styles.backButton }}>
           ← Back
         </button>
-        <h1 style={{
-          margin: '0',
-          color: '#333',
-          fontSize: '28px'
-        }}>
-          Event Details
-        </h1>
+        <h1>Event Details</h1>
         {!registrationStatus.loading && (
           <button
             onClick={registrationStatus.isRegistered ? handleUnregisterFromEvent : handleRegisterForEvent}
             disabled={registering || (!registrationStatus.canRegister && !registrationStatus.isRegistered)}
-            style={getRegistrationButtonStyle()}
+            style={{ ...styles.button, ...styles.registerButton }}
           >
             {getRegistrationButtonText()}
           </button>
@@ -321,310 +466,138 @@ const ViewEvent = () => {
 
       {/* Registration Status Alert */}
       {registrationStatus.isRegistered && (
-        <div style={{
-          backgroundColor: '#e8f5e8',
-          border: '2px solid #4caf50',
-          borderRadius: '8px',
-          padding: '15px',
-          marginBottom: '20px',
-          textAlign: 'center'
-        }}>
-          <strong style={{ color: '#2e7d32' }}>
-            🎉 You are registered for this event!
-          </strong>
-          <p style={{ margin: '5px 0 0 0', color: '#2e7d32' }}>
+        <div style={styles.alert}>
+          <strong>🎉 You are registered for this event!</strong>
+          <p style={{ margin: '5px 0 0 0' }}>
             We look forward to seeing you there. Check your email for event updates.
           </p>
         </div>
       )}
 
       {/* Event Card */}
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        overflow: 'hidden'
-      }}>
-        {/* Event Image */}
+      <div style={styles.card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <h2 style={styles.title}>{event.name}</h2>
+          <span style={styles.statusBadge}>{event.status.toUpperCase()}</span>
+        </div>
+
         {event.image && (
-          <div style={{
-            width: '100%',
-            height: '400px',
-            overflow: 'hidden'
-          }}>
-            <img 
-              src={event.image} 
-              alt={event.name}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
-            />
-          </div>
+          <img
+            src={event.image}
+            alt={event.name}
+            style={{
+              width: '100%',
+              height: '200px',
+              objectFit: 'cover',
+              borderRadius: '5px',
+              marginBottom: '20px',
+            }}
+          />
         )}
 
-        {/* Event Content */}
-        <div style={{ padding: '30px' }}>
-          {/* Event Title and Status */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: '20px'
-          }}>
-            <h2 style={{
-              margin: '0',
-              color: '#333',
-              fontSize: '32px',
-              fontWeight: 'bold'
-            }}>
-              {event.name}
-            </h2>
-            <span style={{
-              padding: '8px 16px',
-              borderRadius: '20px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              backgroundColor: event.status === 'upcoming' ? '#e3f2fd' : 
-                             event.status === 'ongoing' ? '#fff3e0' : '#e8f5e8',
-              color: event.status === 'upcoming' ? '#1976d2' : 
-                     event.status === 'ongoing' ? '#f57c00' : '#388e3c'
-            }}>
-              {event.status.toUpperCase()}
-            </span>
-          </div>
-
-          {/* Organizer Information */}
-          {event.organizerId && (
-            <div style={{
-              marginBottom: '20px',
-              padding: '15px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '8px',
-              border: '1px solid #e9ecef'
-            }}>
-              <h3 style={{
-                margin: '0 0 10px 0',
-                color: '#333',
-                fontSize: '18px'
-              }}>
-                👥 Organized by
-              </h3>
-              <p style={{ margin: '5px 0', color: '#555' }}>
-                <strong>Organizer:</strong> {event.organizerId.name}
-              </p>
-              {event.organizerId.affiliatedNgo && (
-                <p style={{ margin: '5px 0', color: '#555' }}>
-                  <strong>NGO:</strong> {event.organizerId.affiliatedNgo}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Event Details Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '30px',
-            marginBottom: '30px'
-          }}>
-            {/* Date & Time Info */}
-            <div style={{
-              padding: '20px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '8px',
-              border: '1px solid #e9ecef'
-            }}>
-              <h3 style={{
-                margin: '0 0 15px 0',
-                color: '#333',
-                fontSize: '18px'
-              }}>
-                📅 Date & Time
-              </h3>
-              <p style={{ margin: '8px 0', color: '#555' }}>
-                <strong>Event Date:</strong> {formatDate(event.dateOfEvent)}
-              </p>
-              <p style={{ margin: '8px 0', color: '#555' }}>
-                <strong>Time:</strong> {formatTime(event.startTime)} - {formatTime(event.endTime)}
-              </p>
-              <p style={{ margin: '8px 0', color: '#555' }}>
-                <strong>Registration Deadline:</strong> {formatDate(event.deadlineForRegistration)}
-              </p>
-            </div>
-
-            {/* Location Info */}
-            <div style={{
-              padding: '20px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '8px',
-              border: '1px solid #e9ecef'
-            }}>
-              <h3 style={{
-                margin: '0 0 15px 0',
-                color: '#333',
-                fontSize: '18px'
-              }}>
-                📍 Location
-              </h3>
-              <p style={{ margin: '8px 0', color: '#555' }}>
-                <strong>Beach:</strong> {event.beachName}
-              </p>
-              <p style={{ margin: '8px 0', color: '#555' }}>
-                <strong>Address:</strong> {event.beachAddress}
-              </p>
-              <p style={{ margin: '8px 0', color: '#555' }}>
-                <strong>Coordinates:</strong> {event.beachLocation.latitude}, {event.beachLocation.longitude}
-              </p>
-            </div>
-          </div>
-
-          {/* Live Information */}
-          <div style={{
-            padding: '20px',
-            backgroundColor: '#e8f5e8',
-            borderRadius: '8px',
-            border: '2px solid #4caf50',
-            marginBottom: '30px'
-          }}>
-            <h3 style={{
-              margin: '0 0 15px 0',
-              color: '#333',
-              fontSize: '18px'
-            }}>
-              📊 Registration Information
-            </h3>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '20px'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '24px',
-                  fontWeight: 'bold',
-                  color: '#4caf50'
-                }}>
-                  {event.volunteerRegisterCount || 0}
-                </div>
-                <div style={{ color: '#666', fontSize: '14px' }}>
-                  Registered Volunteers
-                </div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '24px',
-                  fontWeight: 'bold',
-                  color: '#2196f3'
-                }}>
-                  {event.registeredVolunteers?.length || 0}
-                </div>
-                <div style={{ color: '#666', fontSize: '14px' }}>
-                  Active Registrations
-                </div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '24px',
-                  fontWeight: 'bold',
-                  color: Math.ceil((new Date(event.deadlineForRegistration) - new Date()) / (1000 * 60 * 60 * 24)) > 0 ? '#ff9800' : '#f44336'
-                }}>
-                  {Math.max(0, Math.ceil((new Date(event.deadlineForRegistration) - new Date()) / (1000 * 60 * 60 * 24)))}
-                </div>
-                <div style={{ color: '#666', fontSize: '14px' }}>
-                  Days Until Deadline
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div style={{ marginBottom: '30px' }}>
-            <h3 style={{
-              margin: '0 0 15px 0',
-              color: '#333',
-              fontSize: '18px'
-            }}>
-              📝 Description
-            </h3>
-            <p style={{ 
-              margin: '0', 
-              color: '#555', 
-              lineHeight: '1.6',
-              fontSize: '16px'
-            }}>
-              {event.description}
+        <div style={styles.infoGrid}>
+          {/* Date & Time */}
+          <div style={styles.infoBox}>
+            <h3 style={styles.sectionTitle}>📅 Date & Time</h3>
+            <p>
+              <strong>Date:</strong> {formatDate(event.dateOfEvent)}
+            </p>
+            <p>
+              <strong>Time:</strong> {formatTime(event.startTime)} - {formatTime(event.endTime)}
+            </p>
+            <p>
+              <strong>Registration Deadline:</strong> {formatDate(event.deadlineForRegistration)}
             </p>
           </div>
 
-          {/* Additional Features */}
-          <div style={{ marginBottom: '30px' }}>
-            <h3 style={{
-              margin: '0 0 15px 0',
-              color: '#333',
-              fontSize: '18px'
-            }}>
-              🎁 Additional Features
-            </h3>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              {event.refreshments && (
-                <span style={{
-                  display: 'inline-block',
-                  padding: '8px 16px',
-                  backgroundColor: '#e8f5e8',
-                  color: '#388e3c',
-                  borderRadius: '20px',
-                  fontSize: '14px'
-                }}>
-                  🥤 Refreshments Provided
-                </span>
-              )}
-              {event.certificateOfParticipation && (
-                <span style={{
-                  display: 'inline-block',
-                  padding: '8px 16px',
-                  backgroundColor: '#e3f2fd',
-                  color: '#1976d2',
-                  borderRadius: '20px',
-                  fontSize: '14px'
-                }}>
-                  🏆 Certificate Available
-                </span>
-              )}
-              {!event.refreshments && !event.certificateOfParticipation && (
-                <span style={{ color: '#666', fontStyle: 'italic' }}>
-                  No additional features listed
-                </span>
-              )}
-            </div>
+          {/* Location */}
+          <div style={styles.infoBox}>
+            <h3 style={styles.sectionTitle}>📍 Location</h3>
+            <p>
+              <strong>Beach:</strong> {event.beachName}
+            </p>
+            <p>
+              <strong>Address:</strong> {event.beachAddress}
+            </p>
+            <button
+              onClick={getDirections}
+              disabled={navigating}
+              style={{ ...styles.button, ...styles.navigateButton }}
+            >
+              {navigating ? '🗺️ Getting Directions...' : '🧭 Navigate to Location'}
+            </button>
           </div>
-
-          {/* Safety Protocols */}
-          {event.safetyProtocols && event.safetyProtocols.length > 0 && (
-            <div style={{ marginBottom: '30px' }}>
-              <h3 style={{
-                margin: '0 0 15px 0',
-                color: '#333',
-                fontSize: '18px'
-              }}>
-                🛡️ Safety Protocols
-              </h3>
-              <ul style={{ 
-                margin: '0', 
-                paddingLeft: '20px', 
-                color: '#555',
-                lineHeight: '1.6'
-              }}>
-                {event.safetyProtocols.map((protocol, index) => (
-                  <li key={index} style={{ margin: '8px 0' }}>
-                    {protocol}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
+
+        {/* Organizer */}
+        {event.organizerId && (
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>👥 Organizer</h3>
+            <p>
+              <strong>Name:</strong> {event.organizerId.name}
+            </p>
+            {event.organizerId.affiliatedNgo && (
+              <p>
+                <strong>NGO:</strong> {event.organizerId.affiliatedNgo}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Description */}
+        <div style={styles.section}>
+          <h3 style={styles.sectionTitle}>📝 Description</h3>
+          <p>{event.description}</p>
+        </div>
+
+        {/* Registration Stats */}
+        <div style={styles.section}>
+          <h3 style={styles.sectionTitle}>📊 Registration Info</h3>
+          <p>
+            <strong>Registered Volunteers:</strong> {event.volunteerRegisterCount || 0}
+          </p>
+          <p>
+            <strong>Days Until Deadline:</strong>{' '}
+            {Math.max(
+              0,
+              Math.ceil((new Date(event.deadlineForRegistration) - new Date()) / (1000 * 60 * 60 * 24))
+            )}
+          </p>
+        </div>
+
+        {/* Additional Features */}
+        <div style={styles.section}>
+          <h3 style={styles.sectionTitle}>🎁 Features</h3>
+          <div>
+            {event.refreshments && <span style={{ marginRight: '10px' }}>🥤 Refreshments</span>}
+            {event.certificateOfParticipation && <span>🏆 Certificate</span>}
+            {!event.refreshments && !event.certificateOfParticipation && (
+              <span style={{ fontStyle: 'italic', color: '#666' }}>No additional features</span>
+            )}
+          </div>
+        </div>
+
+        {/* Safety Protocols */}
+        {event.safetyProtocols && event.safetyProtocols.length > 0 && (
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>🛡️ Safety Protocols</h3>
+            <ul>
+              {event.safetyProtocols.map((protocol, index) => (
+                <li key={index}>{protocol}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Submit Collected Waste Button (Conditional Rendering) */}
+        {showSubmitWasteButton && (
+          <button
+            onClick={handleCollectWasteClick}
+            style={{ ...styles.button, ...styles.submitWasteButton }}
+          >
+            Submit Collected Waste
+          </button>
+        )}
       </div>
     </div>
   );

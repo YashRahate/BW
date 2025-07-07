@@ -166,7 +166,6 @@ router.delete('/unregister/:eventId', authenticateVolunteer, async (req, res) =>
 router.get('/', async (req, res) => {
   try {
     const volunteers = await Volunteer.find()
-      .select('-password')
       .populate('participationHistory', 'name dateOfEvent')
       .sort({ registrationDate: -1 });
     

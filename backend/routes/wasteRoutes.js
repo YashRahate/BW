@@ -2,6 +2,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { WasteCollected, Event, Volunteer } = require('../models');
+const {WasteInformation} = require('../models'); 
 const router = express.Router();
 
 const verifyToken = async (req, res, next) => {
@@ -19,21 +20,25 @@ const verifyToken = async (req, res, next) => {
 };
 
 // Add waste collection data
-router.post('/add', verifyToken, async (req, res) => {
+router.post('/add', async (req, res) => {
   try {
-    const { eventId, volunteerId, type, weight } = req.body;
-
+    const { eventId, volunteerId, category, type, weight,bagCount } = req.body;
+    console.log("Event Id : ", eventId);
     // Verify event belongs to organizer
     const event = await Event.findById(eventId);
-    if (!event || event.organizerId.toString() !== req.organizerId) {
+  
+    //  || event.organizerId.toString() !== req.organizerId
+    if (!event) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     const wasteRecord = new WasteCollected({
       eventId,
       volunteerId,
+      category,
       type,
-      weight
+      weight,
+      bagCount
     });
 
     await wasteRecord.save();
@@ -57,7 +62,7 @@ router.post('/add', verifyToken, async (req, res) => {
 });
 
 // Get waste data for event
-router.get('/event/:eventId', verifyToken, async (req, res) => {
+router.get('/event/:eventId', async (req, res) => {
   try {
     const wasteData = await WasteCollected.find({ eventId: req.params.eventId })
       .populate('volunteerId', 'name email')
@@ -91,6 +96,25 @@ router.get('/stats/:eventId', verifyToken, async (req, res) => {
     res.json({ success: true, data: stats });
   } catch (error) {
     res.status(500).json({ message: 'Server error while fetching waste statistics' });
+  }
+});
+
+// Get waste categories and types (subcategories)
+router.get('/waste-info', async (req, res) => {
+  try {
+    const wasteInfo = await WasteInformation.find({});
+    const categories = [...new Set(wasteInfo.map(item => item.category))];
+    const typesByCategory = wasteInfo.reduce((acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = [];
+      }
+      acc[item.category].push(item.subcategory);
+      return acc;
+    }, {});
+    res.json({ success: true, categories, typesByCategory });
+  } catch (error) {
+    console.error('Error fetching waste information:', error);
+    res.status(500).json({ message: 'Server error while fetching waste information' });
   }
 });
 
